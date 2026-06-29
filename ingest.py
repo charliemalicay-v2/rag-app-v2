@@ -143,18 +143,25 @@ def chunk_text(text, chunk_size, overlap):
 
 # ── Dedup ─────────────────────────────────────────────────────────────────────
 
-def filter_new_chunks(cur, table_name, chunks):
-    """Return only chunks whose content does not already exist in the table."""
+def filter_new_chunks(cur, table_name, chunks, batch_size=500):
+    """Return only chunks whose content does not already exist in the table.
+
+    Queries are split into batches to stay within PostgreSQL's parameter
+    limit (max 65535 per query).
+    """
     if not chunks:
         return chunks
-    placeholders = ",".join("%s" for _ in chunks)
-    cur.execute(
-        SQL("SELECT content FROM {} WHERE content IN ({})").format(
-            Identifier(table_name), SQL(placeholders)
-        ),
-        chunks,
-    )
-    existing = {row[0] for row in cur.fetchall()}
+    existing = set()
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i : i + batch_size]
+        placeholders = ",".join("%s" for _ in batch)
+        cur.execute(
+            SQL("SELECT content FROM {} WHERE content IN ({})").format(
+                Identifier(table_name), SQL(placeholders)
+            ),
+            batch,
+        )
+        existing.update(row[0] for row in cur.fetchall())
     return [c for c in chunks if c not in existing]
 
 
