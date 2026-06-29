@@ -18,6 +18,8 @@ from pgvector.psycopg2 import register_vector
 from psycopg2.sql import Identifier, SQL
 from pypdf import PdfReader
 
+from rag_app.db import db_params
+
 load_dotenv()
 
 
@@ -58,16 +60,6 @@ def parse_args(argv=None):
 
 
 # ── DB helpers ───────────────────────────────────────────────────────────────
-
-def db_params():
-    return {
-        "host": os.getenv("DB_HOST", "localhost"),
-        "port": int(os.getenv("DB_PORT", "5432")),
-        "dbname": os.getenv("DB_NAME", "vector_db_1"),
-        "user": os.getenv("DB_USER", "charlie"),
-        "password": os.getenv("DB_PASSWORD", "malicay"),
-    }
-
 
 def connect_db():
     conn = psycopg2.connect(**db_params())
